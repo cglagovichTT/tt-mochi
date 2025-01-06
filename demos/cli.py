@@ -21,7 +21,8 @@ from genmo.mochi_preview.pipelines import (
 pipeline = None
 model_dir_path = None
 lora_path = None
-num_gpus = torch.cuda.device_count()
+# num_gpus = torch.cuda.device_count()
+num_gpus = 1
 cpu_offload = False
 
 
@@ -59,6 +60,7 @@ def load_model():
             kwargs["fast_init"] = not lora_path
             kwargs["strict_load"] = not lora_path
             kwargs["decode_args"] = dict(overlap=8)
+        print(kwargs)
         pipeline = klass(**kwargs)
 
 

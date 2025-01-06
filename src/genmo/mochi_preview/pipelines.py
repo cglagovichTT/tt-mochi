@@ -451,16 +451,49 @@ def sample_model(device, dit, conditioning, **args):
         cond_batched["packed_indices"] = compute_packed_indices(device, cond_batched["y_mask"][0], num_latents)
         z = repeat(z, "b ... -> (repeat b) ...", repeat=2)
 
+    print(f'DiT architecture: \n{dit}')
     def model_fn(*, z, sigma, cfg_scale):
+        # Print shapes and dtypes of inputs to DiT
+        print(f"z shape: {z.shape}, dtype: {z.dtype}")
+        print(f"sigma shape: {sigma.shape}, dtype: {sigma.dtype}")
+        
         if cond_batched:
-            with torch.autocast("cuda", dtype=torch.bfloat16):
-                out = dit(z, sigma, **cond_batched)
+            # with torch.autocast("cuda", dtype=torch.bfloat16):
+            print("\nBatched conditioning:")
+            for k,v in cond_batched.items():
+                if isinstance(v, torch.Tensor):
+                    print(f"{k} shape: {v.shape}, dtype: {v.dtype}")
+                elif isinstance(v, dict):
+                    print(f"\n{k}:")
+                    for k2,v2 in v.items():
+                        if isinstance(v2, torch.Tensor):
+                            print(f"  {k2} shape: {v2.shape}, dtype: {v2.dtype}")
+            out = dit(z, sigma, **cond_batched)
             out_cond, out_uncond = torch.chunk(out, chunks=2, dim=0)
         else:
             nonlocal cond_text, cond_null
-            with torch.autocast("cuda", dtype=torch.bfloat16):
-                out_cond = dit(z, sigma, **cond_text)
-                out_uncond = dit(z, sigma, **cond_null)
+            # with torch.autocast("cuda", dtype=torch.bfloat16):
+            print("\nText conditioning:")
+            for k,v in cond_text.items():
+                if isinstance(v, torch.Tensor):
+                    print(f"{k} shape: {v.shape}, dtype: {v.dtype}")
+                elif isinstance(v, dict):
+                    print(f"\n{k}:")
+                    for k2,v2 in v.items():
+                        if isinstance(v2, torch.Tensor):
+                            print(f"  {k2} shape: {v2.shape}, dtype: {v2.dtype}")
+            
+            print("\nNull conditioning:")
+            for k,v in cond_null.items():
+                if isinstance(v, torch.Tensor):
+                    print(f"{k} shape: {v.shape}, dtype: {v.dtype}")
+                elif isinstance(v, dict):
+                    print(f"\n{k}:")
+                    for k2,v2 in v.items():
+                        if isinstance(v2, torch.Tensor):
+                            print(f"  {k2} shape: {v2.shape}, dtype: {v2.dtype}")
+            out_cond = dit(z, sigma, **cond_text)
+            out_uncond = dit(z, sigma, **cond_null)
         assert out_cond.shape == out_uncond.shape
         out_uncond = out_uncond.to(z)
         out_cond = out_cond.to(z)
@@ -520,7 +553,8 @@ class MochiSingleGPUPipeline:
         fast_init=True,
         strict_load=True
     ):
-        self.device = torch.device("cuda:0")
+        # self.device = torch.device("cuda:0")
+        self.device = torch.device("cpu")
         self.tokenizer = t5_tokenizer(text_encoder_factory.model_dir)
         t = Timer()
         self.cpu_offload = cpu_offload
@@ -546,6 +580,7 @@ class MochiSingleGPUPipeline:
             )
             print_max_memory()
 
+            print("get_conditioning")
             with move_to_device(self.text_encoder, self.device):
                 conditioning = get_conditioning(
                     tokenizer=self.tokenizer,
@@ -557,6 +592,7 @@ class MochiSingleGPUPipeline:
                 )
             print_max_memory()
 
+            print("sample_model")
             with move_to_device(self.dit, self.device):
                 latents = sample_model(self.device, self.dit, conditioning, **kwargs)
             print_max_memory()

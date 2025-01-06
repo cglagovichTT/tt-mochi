@@ -2,6 +2,8 @@ import torch
 
 
 def modulated_rmsnorm(x, scale, eps=1e-6):
+    print(f"x shape: {x.shape}, dtype: {x.dtype}")
+    print(f"scale shape: {scale.shape}, dtype: {scale.dtype}")
     dtype = x.dtype
     x = x.float()
 

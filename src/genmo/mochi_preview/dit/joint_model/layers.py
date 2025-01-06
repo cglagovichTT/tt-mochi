@@ -91,6 +91,11 @@ class FeedForward(nn.Module):
         ffn_dim_multiplier: Optional[float],
         device: Optional[torch.device] = None,
     ):
+        print(f"in_features: {in_features}")
+        print(f"hidden_size: {hidden_size}")
+        print(f"multiple_of: {multiple_of}")
+        print(f"ffn_dim_multiplier: {ffn_dim_multiplier}")
+        print(f"device: {device}")
         super().__init__()
         # keep parameter count and computation constant compared to standard FFN
         hidden_size = int(2 * hidden_size / 3)
@@ -170,6 +175,7 @@ class RMSNorm(torch.nn.Module):
         self.eps = eps
         self.weight = torch.nn.Parameter(torch.empty(hidden_size, device=device))
         self.register_parameter("bias", None)
+        print(f"RMSNorm hidden_size: {hidden_size}")
 
     def forward(self, x):
         # assert self.weight.dtype == torch.float32, f"RMSNorm weight dtype {self.weight.dtype} != float32"

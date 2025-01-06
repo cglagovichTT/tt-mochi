@@ -160,7 +160,7 @@ class ContextParallelConv3d(SafeConv3d):
 
         # Less efficient implementation for strided convs.
         # All gather x, infer and chunk.
-        assert x.dtype == torch.bfloat16, f"Expected x to be of type torch.bfloat16, got {x.dtype}"
+        # assert x.dtype == torch.bfloat16, f"Expected x to be of type torch.bfloat16, got {x.dtype}"
 
         x = gather_all_frames(x)  # [B, C, k - 1 + global_T, H, W]
         return StridedSafeConv3d.forward(self, x, local_shard=True)
@@ -1015,7 +1015,7 @@ def decode_latents(decoder, z):
     assert z.ndim == 5
     cp_rank, cp_size = cp.get_cp_rank_size()
     z = z.tensor_split(cp_size, dim=2)[cp_rank]  # split along temporal dim
-    with torch.autocast("cuda", dtype=torch.bfloat16):
-        samples = decoder(z)
+    # with torch.autocast("cuda", dtype=torch.bfloat16):
+    samples = decoder(z)
     samples = gather_all_frames(samples)
     return normalize_decoded_frames(samples)
