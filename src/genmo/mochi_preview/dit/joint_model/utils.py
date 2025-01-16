@@ -6,6 +6,10 @@ import torch.nn.functional as F
 
 
 def modulate(x, shift, scale):
+    # print('modulate')
+    # print(f'x: {x.shape}')
+    # print(f'shift: {shift.shape}')
+    # print(f'scale: {scale.shape}')
     return x * (1 + scale.unsqueeze(1)) + shift.unsqueeze(1)
 
 

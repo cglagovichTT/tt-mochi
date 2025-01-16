@@ -63,23 +63,23 @@ class AsymmetricAttention(nn.Module):
         out_proj_lora_alpha: int = 0,
         out_proj_lora_dropout: float = 0.0,
     ):
-        print("AsymmetricAttention init args:")
-        print(f"dim_x: {dim_x}")
-        print(f"dim_y: {dim_y}")
-        print(f"num_heads: {num_heads}")
-        print(f"qkv_bias: {qkv_bias}")
-        print(f"qk_norm: {qk_norm}")
-        print(f"update_y: {update_y}")
-        print(f"out_bias: {out_bias}")
-        print(f"attention_mode: {attention_mode}")
-        print(f"softmax_scale: {softmax_scale}")
-        print(f"device: {device}")
-        print(f"qkv_proj_lora_rank: {qkv_proj_lora_rank}")
-        print(f"qkv_proj_lora_alpha: {qkv_proj_lora_alpha}")
-        print(f"qkv_proj_lora_dropout: {qkv_proj_lora_dropout}")
-        print(f"out_proj_lora_rank: {out_proj_lora_rank}")
-        print(f"out_proj_lora_alpha: {out_proj_lora_alpha}")
-        print(f"out_proj_lora_dropout: {out_proj_lora_dropout}")
+        # print("AsymmetricAttention init args:")
+        # print(f"dim_x: {dim_x}")
+        # print(f"dim_y: {dim_y}")
+        # print(f"num_heads: {num_heads}")
+        # print(f"qkv_bias: {qkv_bias}")
+        # print(f"qk_norm: {qk_norm}")
+        # print(f"update_y: {update_y}")
+        # print(f"out_bias: {out_bias}")
+        # print(f"attention_mode: {attention_mode}")
+        # print(f"softmax_scale: {softmax_scale}")
+        # print(f"device: {device}")
+        # print(f"qkv_proj_lora_rank: {qkv_proj_lora_rank}")
+        # print(f"qkv_proj_lora_alpha: {qkv_proj_lora_alpha}")
+        # print(f"qkv_proj_lora_dropout: {qkv_proj_lora_dropout}")
+        # print(f"out_proj_lora_rank: {out_proj_lora_rank}")
+        # print(f"out_proj_lora_alpha: {out_proj_lora_alpha}")
+        # print(f"out_proj_lora_dropout: {out_proj_lora_dropout}")
         super().__init__()
         self.attention_mode = attention_mode
         self.dim_x = dim_x
@@ -156,16 +156,16 @@ class AsymmetricAttention(nn.Module):
         max_seqlen_in_batch: int,
     ):
         # Log input shapes
-        print("prepare_qkv input shapes:")
-        print(f"x shape: {x.shape}")  # (B, M, dim_x)
-        print(f"y shape: {y.shape}")  # (B, L, dim_y) 
-        print(f"scale_x shape: {scale_x.shape}")  # (B, dim_x)
-        print(f"scale_y shape: {scale_y.shape}")  # (B, dim_y)
-        print(f"rope_cos shape: {rope_cos.shape}")  # (seqlen, head_dim/2)
-        print(f"rope_sin shape: {rope_sin.shape}")  # (seqlen, head_dim/2)
-        print(f"valid_token_indices shape: {valid_token_indices.shape}")  # (total,)
-        print(f"valid_token_indices: {valid_token_indices}")
-        print(f"max_seqlen_in_batch value: {max_seqlen_in_batch}")  # int
+        # print("prepare_qkv input shapes:")
+        # print(f"x shape: {x.shape}")  # (B, M, dim_x)
+        # print(f"y shape: {y.shape}")  # (B, L, dim_y) 
+        # print(f"scale_x shape: {scale_x.shape}")  # (B, dim_x)
+        # print(f"scale_y shape: {scale_y.shape}")  # (B, dim_y)
+        # print(f"rope_cos shape: {rope_cos.shape}")  # (seqlen, head_dim/2)
+        # print(f"rope_sin shape: {rope_sin.shape}")  # (seqlen, head_dim/2)
+        # print(f"valid_token_indices shape: {valid_token_indices.shape}")  # (total,)
+        # print(f"valid_token_indices: {valid_token_indices}")
+        # print(f"max_seqlen_in_batch value: {max_seqlen_in_batch}")  # int
         # Process visual features
         x = modulated_rmsnorm(x, scale_x)  # (B, M, dim_x) where M = N / cp_group_size
         qkv_x = self.qkv_x(x)  # (B, M, 3 * dim_x)
@@ -404,15 +404,15 @@ class AsymmetricJointBlock(nn.Module):
         device: Optional[torch.device] = None,
         **block_kwargs,
     ):
-        print(f"AsymmetricJointBlock args:")
-        print(f"  hidden_size_x: {hidden_size_x}")
-        print(f"  hidden_size_y: {hidden_size_y}") 
-        print(f"  num_heads: {num_heads}")
-        print(f"  mlp_ratio_x: {mlp_ratio_x}")
-        print(f"  mlp_ratio_y: {mlp_ratio_y}")
-        print(f"  update_y: {update_y}")
-        print(f"  device: {device}")
-        print(f"  block_kwargs: {block_kwargs}")
+        # print(f"AsymmetricJointBlock args:")
+        # print(f"  hidden_size_x: {hidden_size_x}")
+        # print(f"  hidden_size_y: {hidden_size_y}") 
+        # print(f"  num_heads: {num_heads}")
+        # print(f"  mlp_ratio_x: {mlp_ratio_x}")
+        # print(f"  mlp_ratio_y: {mlp_ratio_y}")
+        # print(f"  update_y: {update_y}")
+        # print(f"  device: {device}")
+        # print(f"  block_kwargs: {block_kwargs}")
         super().__init__()
         self.update_y = update_y
         self.hidden_size_x = hidden_size_x
@@ -478,10 +478,10 @@ class AsymmetricJointBlock(nn.Module):
             x: (B, N, dim) tensor of visual tokens after block
             y: (B, L, dim) tensor of text tokens after block
         """
-        print("\nIn asymm_models_joint.py Block forward:")
-        print(f"x shape: {x.shape}, dtype: {x.dtype}")
-        print(f"c shape: {c.shape}, dtype: {c.dtype}")
-        print(f"y shape: {y.shape}, dtype: {y.dtype}")
+        # print("\nIn asymm_models_joint.py Block forward:")
+        # print(f"x shape: {x.shape}, dtype: {x.dtype}")
+        # print(f"c shape: {c.shape}, dtype: {c.dtype}")
+        # print(f"y shape: {y.shape}, dtype: {y.dtype}")
 
         N = x.size(1)
 
@@ -625,10 +625,12 @@ class AsymmDiTJoint(nn.Module):
         #  b = 46: AsymmetricJointBlock, update_y=True
         #  b = 47: AsymmetricJointBlock, update_y=False. No need to update text features.
         blocks = []
-        print(f'Creating blocks with kw args: {block_kwargs}')
+        # print(f'Creating blocks with kw args: {block_kwargs}')
+        # TODO: cglagovich: this hardcoded val is to make testing with fewer layers possible. clean this up.
+        MAX_DEPTH = 48
         for b in range(depth):
             # Joint multi-modal block
-            update_y = b < depth - 1
+            update_y = b < MAX_DEPTH - 1
             block = AsymmetricJointBlock(
                 hidden_size_x,
                 hidden_size_y,
@@ -699,12 +701,12 @@ class AsymmDiTJoint(nn.Module):
         y_feat = self.t5_yproj(t5_feat)  # (B, L, t5_feat_dim) --> (B, L, D)
         
         # Print shapes and dtypes of prepare() function outputs
-        print("\nIn DiT prepare() function - output shapes and dtypes:")
-        print(f"x: shape={x.shape}, dtype={x.dtype}")
-        print(f"c: shape={c.shape}, dtype={c.dtype}") 
-        print(f"y_feat: shape={y_feat.shape}, dtype={y_feat.dtype}")
-        print(f"rope_cos: shape={rope_cos.shape}, dtype={rope_cos.dtype}")
-        print(f"rope_sin: shape={rope_sin.shape}, dtype={rope_sin.dtype}")
+        # print("\nIn DiT prepare() function - output shapes and dtypes:")
+        # print(f"x: shape={x.shape}, dtype={x.dtype}")
+        # print(f"c: shape={c.shape}, dtype={c.dtype}") 
+        # print(f"y_feat: shape={y_feat.shape}, dtype={y_feat.dtype}")
+        # print(f"rope_cos: shape={rope_cos.shape}, dtype={rope_cos.dtype}")
+        # print(f"rope_sin: shape={rope_sin.shape}, dtype={rope_sin.dtype}")
 
         return x, c, y_feat, rope_cos, rope_sin
 

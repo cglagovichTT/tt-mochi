@@ -2,10 +2,10 @@ import torch
 
 
 def residual_tanh_gated_rmsnorm(x, x_res, gate, eps=1e-6):
-    print("residual_tanh_gated_rmsnorm")
-    print(f"x shape: {x.shape}, dtype: {x.dtype}")
-    print(f"x_res shape: {x_res.shape}, dtype: {x_res.dtype}")
-    print(f"gate shape: {gate.shape}, dtype: {gate.dtype}")
+    # print("residual_tanh_gated_rmsnorm")
+    # print(f"x shape: {x.shape}, dtype: {x.dtype}")
+    # print(f"x_res shape: {x_res.shape}, dtype: {x_res.dtype}")
+    # print(f"gate shape: {gate.shape}, dtype: {gate.dtype}")
     # Convert to fp32 for precision
     x_res = x_res.float()
 

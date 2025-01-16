@@ -7,7 +7,6 @@ from functools import partial
 from typing import Any, Dict, List, Literal, Optional, Union, cast
 
 import numpy as np
-import ray
 import torch
 import torch.distributed as dist
 import torch.nn as nn
@@ -40,7 +39,6 @@ from genmo.mochi_preview.vae.models import (
     decode_latents_tiled_spatial,
 )
 from genmo.mochi_preview.vae.vae_stats import dit_latents_to_vae_latents
-
 
 def load_to_cpu(p, weights_only=True):
     if p.endswith(".safetensors"):
@@ -454,46 +452,51 @@ def sample_model(device, dit, conditioning, **args):
     print(f'DiT architecture: \n{dit}')
     def model_fn(*, z, sigma, cfg_scale):
         # Print shapes and dtypes of inputs to DiT
-        print(f"z shape: {z.shape}, dtype: {z.dtype}")
-        print(f"sigma shape: {sigma.shape}, dtype: {sigma.dtype}")
+        # print(f"z shape: {z.shape}, dtype: {z.dtype}")
+        # print(f"sigma shape: {sigma.shape}, dtype: {sigma.dtype}")
         
         if cond_batched:
-            # with torch.autocast("cuda", dtype=torch.bfloat16):
-            print("\nBatched conditioning:")
-            for k,v in cond_batched.items():
-                if isinstance(v, torch.Tensor):
-                    print(f"{k} shape: {v.shape}, dtype: {v.dtype}")
-                elif isinstance(v, dict):
-                    print(f"\n{k}:")
-                    for k2,v2 in v.items():
-                        if isinstance(v2, torch.Tensor):
-                            print(f"  {k2} shape: {v2.shape}, dtype: {v2.dtype}")
+            # # with torch.autocast("cuda", dtype=torch.bfloat16):
+            # print("\nBatched conditioning:")
+            # for k,v in cond_batched.items():
+            #     if isinstance(v, torch.Tensor):
+            #         print(f"{k} shape: {v.shape}, dtype: {v.dtype}")
+            #     elif isinstance(v, dict):
+            #         print(f"\n{k}:")
+            #         for k2,v2 in v.items():
+            #             if isinstance(v2, torch.Tensor):
+            #                 print(f"  {k2} shape: {v2.shape}, dtype: {v2.dtype}")
             out = dit(z, sigma, **cond_batched)
             out_cond, out_uncond = torch.chunk(out, chunks=2, dim=0)
         else:
             nonlocal cond_text, cond_null
             # with torch.autocast("cuda", dtype=torch.bfloat16):
-            print("\nText conditioning:")
-            for k,v in cond_text.items():
-                if isinstance(v, torch.Tensor):
-                    print(f"{k} shape: {v.shape}, dtype: {v.dtype}")
-                elif isinstance(v, dict):
-                    print(f"\n{k}:")
-                    for k2,v2 in v.items():
-                        if isinstance(v2, torch.Tensor):
-                            print(f"  {k2} shape: {v2.shape}, dtype: {v2.dtype}")
+            # print("\nText conditioning:")
+            # for k,v in cond_text.items():
+            #     if isinstance(v, torch.Tensor):
+            #         print(f"{k} shape: {v.shape}, dtype: {v.dtype}")
+            #     elif isinstance(v, dict):
+            #         print(f"\n{k}:")
+            #         for k2,v2 in v.items():
+            #             if isinstance(v2, torch.Tensor):
+            #                 print(f"  {k2} shape: {v2.shape}, dtype: {v2.dtype}")
             
-            print("\nNull conditioning:")
-            for k,v in cond_null.items():
-                if isinstance(v, torch.Tensor):
-                    print(f"{k} shape: {v.shape}, dtype: {v.dtype}")
-                elif isinstance(v, dict):
-                    print(f"\n{k}:")
-                    for k2,v2 in v.items():
-                        if isinstance(v2, torch.Tensor):
-                            print(f"  {k2} shape: {v2.shape}, dtype: {v2.dtype}")
+            # print("\nNull conditioning:")
+            # for k,v in cond_null.items():
+            #     if isinstance(v, torch.Tensor):
+            #         print(f"{k} shape: {v.shape}, dtype: {v.dtype}")
+            #     elif isinstance(v, dict):
+            #         print(f"\n{k}:")
+            #         for k2,v2 in v.items():
+            #             if isinstance(v2, torch.Tensor):
+            #                 print(f"  {k2} shape: {v2.shape}, dtype: {v2.dtype}")
             out_cond = dit(z, sigma, **cond_text)
-            out_uncond = dit(z, sigma, **cond_null)
+            if hasattr(dit, "mesh_device"):
+                # TODO: cglagovich remove this specialization, push the logic into dit forward.
+                # Using tt-model
+                out_uncond = dit(z, sigma, uncond=True, **cond_null)
+            else:
+                out_uncond = dit(z, sigma, **cond_null)
         assert out_cond.shape == out_uncond.shape
         out_uncond = out_uncond.to(z)
         out_cond = out_cond.to(z)
@@ -593,7 +596,11 @@ class MochiSingleGPUPipeline:
             print_max_memory()
 
             print("sample_model")
-            with move_to_device(self.dit, self.device):
+            if not hasattr(self.dit, "mesh_device"):
+                with move_to_device(self.dit, self.device):
+                    latents = sample_model(self.device, self.dit, conditioning, **kwargs)
+            else:
+                print('Skipping move_to_device for tt-model')
                 latents = sample_model(self.device, self.dit, conditioning, **kwargs)
             print_max_memory()
 
