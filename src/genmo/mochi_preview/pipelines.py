@@ -449,7 +449,6 @@ def sample_model(device, dit, conditioning, **args):
         cond_batched["packed_indices"] = compute_packed_indices(device, cond_batched["y_mask"][0], num_latents)
         z = repeat(z, "b ... -> (repeat b) ...", repeat=2)
 
-    print(f'DiT architecture: \n{dit}')
     def model_fn(*, z, sigma, cfg_scale):
         # Print shapes and dtypes of inputs to DiT
         # print(f"z shape: {z.shape}, dtype: {z.dtype}")
@@ -490,12 +489,13 @@ def sample_model(device, dit, conditioning, **args):
             #         for k2,v2 in v.items():
             #             if isinstance(v2, torch.Tensor):
             #                 print(f"  {k2} shape: {v2.shape}, dtype: {v2.dtype}")
-            out_cond = dit(z, sigma, **cond_text)
             if hasattr(dit, "mesh_device"):
                 # TODO: cglagovich remove this specialization, push the logic into dit forward.
                 # Using tt-model
-                out_uncond = dit(z, sigma, uncond=True, **cond_null)
+                out_cond = dit(z, sigma, y_feat=cond_text["y_feat"], y_mask=cond_text["y_mask"], packed_indices=cond_text["packed_indices"])
+                out_uncond = dit(z, sigma, y_feat=cond_null["y_feat"], y_mask=cond_null["y_mask"], packed_indices=cond_null["packed_indices"], uncond=True)
             else:
+                out_cond = dit(z, sigma, **cond_text)
                 out_uncond = dit(z, sigma, **cond_null)
         assert out_cond.shape == out_uncond.shape
         out_uncond = out_uncond.to(z)
@@ -563,6 +563,8 @@ class MochiSingleGPUPipeline:
         self.cpu_offload = cpu_offload
         self.decode_args = decode_args or {}
         self.decode_type = decode_type
+        self.dit_factory = dit_factory
+        self.decoder_factory = decoder_factory
         init_id = "cpu" if cpu_offload else 0
         with t("load_text_encoder"):
             self.text_encoder = text_encoder_factory.get_model(
@@ -570,10 +572,10 @@ class MochiSingleGPUPipeline:
                 device_id=init_id,
                 world_size=1,
             )
-        with t("load_dit"):
-            self.dit = dit_factory.get_model(local_rank=0, device_id=init_id, world_size=1, fast_init=fast_init, strict_load=strict_load) # type: ignore
-        with t("load_vae"):
-            self.decoder = decoder_factory.get_model(local_rank=0, device_id=init_id, world_size=1)
+        # with t("load_dit"):
+        #     self.dit = dit_factory.get_model(local_rank=0, device_id=init_id, world_size=1, fast_init=fast_init, strict_load=strict_load) # type: ignore
+        # with t("load_vae"):
+        #     self.decoder = decoder_factory.get_model(local_rank=0, device_id=init_id, world_size=1)
         t.print_stats()
 
     def __call__(self, batch_cfg, prompt, negative_prompt, **kwargs):
@@ -602,8 +604,8 @@ class MochiSingleGPUPipeline:
             else:
                 print('Skipping move_to_device for tt-model')
                 latents = sample_model(self.device, self.dit, conditioning, **kwargs)
+                
             print_max_memory()
-
             with move_to_device(self.decoder, self.device):
                 if self.decode_type == "tiled_full":
                     frames = decode_latents_tiled_full(
